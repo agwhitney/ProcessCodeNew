@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Places containing data, and any .h5 file
+*.h5
+L0bFiles/Calibration/*
+L0bFiles/Data/*
+Reader/Results/L0bdata/*
+Reader/Results/L1adata/*
+
+# CSVs (batch lists, T_rec output)
+*.csv
+
+.DS_Store

@@ -1,0 +1,9 @@
+[project]
+name = "processcodenew"
+version = "0.1.0"
+description = "Existing processing code from Xavi, retrofit and wrapped for HAMMR-HD."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.4.5",
+]

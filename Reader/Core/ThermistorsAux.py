@@ -1,0 +1,267 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Nov 11 15:13:01 2013
+
+@author: xbosch
+"""
+import numpy as np
+import pylab as pl
+
+class thermistors:
+    
+    def __init__(self, h5file, verbose=True):
+        
+        datasource='h5file.root.Temperature_Data.Thermistor_DATA'  
+        data =eval(datasource)
+        print( "INFO: new instance of Thermistors for: ", datasource )      
+        try:
+            self.TMP_Voltages=  np.array([x['Voltages'] for x in data.iterrows()])
+            self.TMP_Timestamp=  np.array([x['Timestamp'] for x in data.iterrows()])
+            self.TMP_PackageNum=  np.array([x['Packagenumber'] for x in data.iterrows()])
+            self.length=len(self.TMP_Voltages)
+        except:
+            print( "No thermistor data found!")
+        
+        # In the future this has to be imported from the HDF5 file from information provided by the server
+        ## We need to calculate the OpenCircuit Voltage for the Digitizer #1        
+        self.regulatedVoltage = [1.1278, 1.0804, 1.1052, 1.0966, 1.0804] # Weldon found 1.125 for ADC#3
+        self.ThermistorType =['KS502J2','KS502J2','44906', 'KS502J2','KS502J2']
+        self.ActiveADC =[3, 0, 1, 2, 4] 
+        self.Temp=np.empty([len(self.ActiveADC)*8, self.length])
+        self.ThermistorConnected=np.empty(len(self.ActiveADC)*8,'bool_')
+        index=0
+        for x in self.ActiveADC:
+            for thermistor in range(0,8):
+                self.Temp[index,:], self.ThermistorConnected[index]=self.fromVoltagetoT(self.TMP_Voltages[:,index],self.regulatedVoltage[x], self.ThermistorType[x])
+                if self.ThermistorConnected[index]==False:
+                    if verbose==True: print( "Warning: Thermistor %s from ADC#%s is not connected"%(index,x))
+                index=index+1
+        
+        ## Defining Thermistor Names&Colors
+        self.color=['red', 'cyan', 'yellow', 'black', 'magenta','green','blue','#a2a7ff' ]
+        self.thermistorName=["OpBench MW-Horn", "OpBench MMW-MCMs","OpBench Sounder-Horn", "OpBench Ambient Box", "not connected 1", "not connected 2", "not connected 3", "not connected 4", "CalTar|Upper Left[1]","CalTar|Lower Left[3]","CalTar|Center[2]","CalTar|Bottom Left[1]","CalTar|Bottom Right[3]","CalTar|Upper Right[3]" ,"CalTar|Lower Right[1]", "CalTar|Top[2]", "MW QV-18/24-Int","MW QV-34-Int" ,"MW QH-18/24-Ext","MW QH-34-Ext","MW-NS QH-18/24","MW-NS QH-34" ,"MW-NS QV-18/24","MW-NS QV-34","+/-11.5V PS-Front","+/-11.5V PS-Back","Paraboloid Backside Bottom","Paraboloid Backside Middle","Paraboloid Backside Top","Motor Controller","Motor","Motor PSU","MMW-MCM90","MMW-MCM130","MMW-MCM168","SND-118 External","SND-118 Multiplier","SND-183 Multiplier", "SND-183 External","ABEB Bloc"]
+        
+        self.thermistorSTD = {}
+        self.thermistorAVG = {}            
+
+        self.thermistorResampled=[]
+        self.CalibratonTargetChannelsResampledSpatiallyAveraged=[]
+        self.resamplingTime=[]
+        self.ThermistorFilteredAndResampled=[]
+
+
+    def thermistorsFilterAndResampling(self, externalclk,WindowLength=5, Verbose=True):
+        ## This function resamples the thermsitor at the motor speed rate
+        ## Usually motor is at 1Hz and thermistors at 1.1 Hz, so needs to be adjusted        
+        from scipy import interpolate
+        import scipy.signal
+        DeltaTime=0.01  # new interpolated signal resolution in seconds
+        L=len(externalclk)
+        acqTime=np.squeeze(self.TMP_Timestamp-self.TMP_Timestamp[0])
+        zeroOffsetExternalclk=np.squeeze(externalclk-externalclk[0])
+        self.ThermistorFilteredAndResampled=np.empty([40,L])
+        index=[]
+        NewTime=np.arange(acqTime[0], acqTime[-1], DeltaTime)
+        # Calculating resampling index
+        for i in range(L):
+            timestampref=np.abs(NewTime-zeroOffsetExternalclk[i])
+            index.append(np.where(timestampref==timestampref.min())[0][0])
+            self.resamplingTime.append(externalclk[i]) 
+        # Filtering and interpolating
+        SemiWindowLength=int(np.floor(WindowLength/2))
+        for i in range(0,40):
+            #print "Filtering Thermistor:",i
+            FilteredTemp=self.runningMeanFast(self.Temp[i,:], WindowLength)
+            FilteredTemp[0:SemiWindowLength]=self.Temp[i,0:SemiWindowLength]
+            FilteredTemp[-SemiWindowLength:]=self.Temp[i,-SemiWindowLength-1:-1]
+            f = interpolate.interp1d(acqTime,FilteredTemp)
+            B=f(NewTime)
+            # Resampling
+            self.ThermistorFilteredAndResampled[i,:]=B[index]
+        #print self.ThermistorFilteredAndResampled.shape
+            if Verbose==True: #%and i==8:
+                fig=pl.figure(40660)
+                pl.plot(acqTime,self.Temp[i,:].T, 'ro', label= self.thermistorName[i])
+                pl.plot(acqTime,FilteredTemp, 'b', label= self.thermistorName[i])
+                pl.plot(NewTime[index],self.ThermistorFilteredAndResampled[i,:].T, 'k.')   
+                pl.grid(True)
+                pl.ylabel("Celsius")
+                pl.xlabel("Seconds")
+                pl.legend()
+                pl.show()
+        return
+    def runningMeanFast(self, x, N):
+        window= np.ones(int(N))/float(N)
+        #print "runningMeanFast:", x.shape, window.shape
+        return np.convolve(x, window, 'same')
+
+
+    def thermistorsResamplingAverage(self,ThremistorArray, CalTargetArray, Verbose=True):
+        TemperaturesToResample=np.array([self.ThermistorFilteredAndResampled[x,:] for x in ThremistorArray])
+        TemperaturesCalTarget= np.array([self.ThermistorFilteredAndResampled[x,:] for x in CalTargetArray])     
+        self.CalibratonTargetChannelsResampledSpatiallyAveraged=np.mean(TemperaturesCalTarget, axis=0)
+        self.ThermistorResampledAndAveraged=np.mean(TemperaturesToResample, axis=0)
+        if Verbose==True:
+            print( 'Resampled Temps:', self.ThermistorResampledAndAveraged, len(self.ThermistorResampledAndAveraged))
+            print( 'Resampled CalTar Temps:',self.CalibratonTargetChannelsResampledSpatiallyAveraged, len(self.CalibratonTargetChannelsResampledSpatiallyAveraged))
+        return
+ 
+    def fromVoltagetoT(self,voltage,regulatedVoltage,thermistorType):
+        if thermistorType=='44906':
+            #print 'Radiometer Type Thermistor'
+            A=1.28082086269172 * 10 ** -3
+            B=2.36865057309759 * 10 ** -4
+            C=9.02634799967035 * 10 ** -8
+            D=0
+        elif thermistorType=='KS502J2':
+            #print 'General Type Thermistor'configfile='..\..\GeneralPaths.py'
+            A = 1.29337828808 * 10 ** -3
+            B = 2.34313147501 * 10 ** -4
+            C = 1.09840791237 * 10 ** -7
+            D = -6.51108048031* 10 ** -11
+        
+        if np.mean(voltage)>1.11: 
+            ThermistorConnected=False
+            tempC=np.zeros(len(voltage))
+            #print np.mean(voltage)
+        else:
+            ThermistorConnected=True
+            resist = (voltage / (regulatedVoltage - voltage)) * 5000
+            tempInv = (A + B * np.log(resist) + C * np.log(resist)**3 + D * np.log(resist)**5)
+            temp = 1 / tempInv
+            tempC = temp - 273.15
+        return tempC, ThermistorConnected
+
+    def GetTemperatureByTime(self, TimeIDInternalReference, ThremistorArray, TimeToAverage):
+        
+        MeanTemperature=np.zeros(len(TimeIDInternalReference))
+        for i in range(0, len(TimeIDInternalReference)):
+            PositionIndexBoolean=np.logical_and(self.TMP_Timestamp>(TimeIDInternalReference[i]-TimeToAverage),self.TMP_Timestamp<(TimeIDInternalReference[i]+TimeToAverage))
+            PositionIndex=np.where(PositionIndexBoolean==True)[0]
+            TemperaturesToAverage=0            
+            for x in range(0, len(ThremistorArray)):
+                TemperaturesToAverage=TemperaturesToAverage+np.sum(self.Temp[ThremistorArray[x],PositionIndex])
+               
+            #print TemperaturesToAverage.shape, TemperaturesToAverage/(len(ThremistorArray)*len(PositionIndex))           
+            MeanTemperature[i]=TemperaturesToAverage/(len(ThremistorArray)*len(PositionIndex))
+        return MeanTemperature
+    
+    def GetMeanTemperatureChannels(self, ThremistorArray):
+        
+        TemperaturesToAverage= [self.Temp[x,:] for x in ThremistorArray]
+        AverageTemperature=np.mean(np.mean(TemperaturesToAverage,1),0)
+        STDTemperature=np.mean(np.std(TemperaturesToAverage,1),0)
+        TherAVG=np.mean(TemperaturesToAverage,1)        
+        TherSTD=np.std(TemperaturesToAverage,1)
+        iterable=zip(ThremistorArray,TherSTD)
+        self.thermistorSTD = {key: value for (key,value) in iterable}   
+        iterable=zip(ThremistorArray,TherAVG)        
+        self.thermistorAVG={key: value for (key,value) in iterable} 
+        minTemperature=np.min(np.mean(TemperaturesToAverage,1),0)
+        maxTemperature=np.max(np.mean(TemperaturesToAverage,1),0)
+        return AverageTemperature,STDTemperature, self.thermistorSTD,self.thermistorAVG, minTemperature, maxTemperature, maxTemperature-minTemperature
+        
+    def GetMeanTemperatureDepartingChannels(self, ThremistorArray, ThermistorReference):
+        
+        TemperaturesToAverage= [self.Temp[x,:] for x in ThremistorArray]
+        OffsetTemperatures=TemperaturesToAverage-np.mean(self.Temp[ThermistorReference,:])
+        AverageTemperature=np.mean(OffsetTemperatures,1)
+        stdTemperature=np.std(OffsetTemperatures,1)
+        return AverageTemperature,stdTemperature    
+        
+
+    def PlotThermistorByName(self, namevector, title):
+
+        TemperatureArray=np.empty([len(namevector),len(self.Temp[0,:])])       
+        fig=pl.figure(4066)
+        index=0
+        for name in namevector:
+            xx =[i for i, s in enumerate(self.thermistorName) if name in s]
+            self.GetMeanTemperatureChannels([xx[0]])
+            legend=u"%s:%.2f\u00b0\u00B1%.2f\u00b0C"%(self.thermistorName[xx[0]],self.thermistorAVG[xx[0]],self.thermistorSTD[xx[0]])
+            pl.plot(self.TMP_Timestamp-self.TMP_Timestamp[0],self.Temp[xx[0],:],  color = self.color[xx[0]%8], label= legend)
+            Time=self.TMP_Timestamp,
+            #print xx[0], i 
+            TemperatureArray[index,:]=self.Temp[xx[0],:]
+            index=index+1
+            
+        pl.legend(loc = 'best',shadow = True)
+        pl.grid(True)
+        pl.ylabel("Celsius")
+        pl.xlabel("Seconds")
+        pl.title(title)
+       # pl.show(block=False)
+        return fig, Time, TemperatureArray
+
+    def printthermistors(self, title=" "):
+
+        fig=pl.figure(4001) 
+        ## ADC4
+        pl.subplot(5, 1, 1)
+        for i in range(0, 7):
+            pl.plot(self.TMP_Timestamp-self.TMP_Timestamp[0],self.Temp[i,:],  color = self.color[i%8], label= self.thermistorName[i], linewidth=4.0)
+        pl.legend(loc = 'best',shadow = True)
+        pl.grid(True)
+        pl.ylabel("Celsius")
+        ## ADC1 
+        pl.subplot(5, 1, 2)
+        for i in range(8, 15):
+            pl.plot(self.TMP_Timestamp-self.TMP_Timestamp[0],self.Temp[i,:],  color = self.color[i%8], label= self.thermistorName[i], linewidth=4.0)
+        pl.legend(loc = 'best',shadow = True)
+        pl.grid(True)
+        pl.ylabel("Celsius")
+        ## ADC2
+        pl.subplot(5, 1, 3) 
+        for i in range(16, 21):
+            pl.plot(self.TMP_Timestamp-self.TMP_Timestamp[0],self.Temp[i,:],  color = self.color[i%8], label= self.thermistorName[i], linewidth=4.0)
+        pl.legend(loc = 'best',shadow = True)
+        pl.grid(True) 
+        pl.ylabel("Celsius")
+        ## ADC3     
+        pl.subplot(5, 1, 4)
+        for i in range(24, 31):
+            pl.plot(self.TMP_Timestamp-self.TMP_Timestamp[0],self.Temp[i,:], color = self.color[i%8], label= self.thermistorName[i], linewidth=4.0)
+        pl.legend(loc = 'best',shadow = True)
+        pl.grid(True)
+        pl.ylabel("Celsius")
+        ## ADC4xx[0]
+        pl.subplot(5, 1, 5) 
+        for i in range(32, 40):
+            pl.plot(self.TMP_Timestamp-self.TMP_Timestamp[0],self.Temp[i,:],  color = self.color[i-32], label= self.thermistorName[i], linewidth=4.0)
+        pl.legend(loc = 'best',shadow = True)
+        pl.grid(True)
+        pl.ylabel("Celsius")
+        pl.suptitle("System Temperature " +title)
+        #pl.show(block=False)
+        return fig
+        
+def main():
+    import tables as tb
+    import os
+    import sys
+    configfile='..\..\GeneralPaths.py'
+    sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
+    from GeneralPaths import H5_DATA_BASE_PATH
+
+    print( "\n\n###This is a Class, not to be run as a SCRIPT##")
+    filenameroot='2014_11_04__09_55_31__2of2_WCFC_Day1_LN2_Calibration'
+
+    filename=filenameroot+'.h5'
+    print( "WARNING: %s is provided with the repository for debuging purposes only"%filename)
+    if not os.path.isabs(filename):
+        filenameh5 = os.path.join(H5_DATA_BASE_PATH, filename)
+        
+    h5file=tb.open_file(filenameh5, mode = "r")
+    print( "-----------------------------------------")
+    for group in h5file.walkGroups("/"):
+        print( "--", group)
+    print( "-----------------------------------------")
+    Thermistors=thermistors(h5file)
+    Thermistors.printthermistors(filenameroot)
+    #print Thermistors.GetMeanTemperatureChannels([8,9, 10, 11,12,13,14, 15])
+    #print Thermistors.GetMeanTemperatureDepartingChannels([8,9, 10, 11,12,13,14, 15], 10)
+    #Thermistors.PlotThermistorByName(['ABEB Bloc','SND-118 Multiplier','SND-183 Multiplier'], filenameroot)
+    figThermistorByName,time, TemperatureArray= Thermistors.PlotThermistorByName(["CalTar|Upper Left[1]","CalTar|Lower Left[3]","CalTar|Center[2]","CalTar|Bottom Left[1]","CalTar|Bottom Right[3]","CalTar|Upper Right[3]" ,"CalTar|Lower Right[1]", "CalTar|Top[2]"], filenameroot)
+
+if __name__ == "__main__":
+    main()

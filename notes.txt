@@ -1,0 +1,57 @@
+Cal_Step_#_xxx.py needs to be run from its parent folder (Calibration)
+
+go to  reader/calibration
+    2 calibration steps - both of ours are in the SOUNDING channel SND
+    in step 1
+        the csv batch needs to be in reader/csv batch files
+        The l0b files need to be in SystemOutput/Data/Final_h5_files
+        put the ln2 batch file filename in the step1 script line 32
+            (Jonah tossed in some older LN2 measurements for some redundancy)
+        Results go to reader/results/L0bdata with same name+_CSV
+            a csv suffixed with 'Out_SND_All' for step 2
+
+    in step 2
+        line 65, 68, 49, 159 change. keep suffixes Out_SND_All and CSV on 65,68
+
+    output is a file (w/ Trec in the name). Copy it to reader/calibration
+
+processing
+process measurements L1a .py
+    line 29 is how long the mmt ran for. Maybe not an issue to set to the longest, might just fub the formatting.
+    line 26 and 27 channels to use and assoc. calibrations
+    line 36 test = batch.csv with all the data we want (keep .csv out of the name)
+
+
+---
+New notes with better knowledge
+---
+1) Copy L0b files to SystemOutput/Data/Final_h5_files
+2) Run `FileNamesToCVS.py` to create a file listing all of the L0b file names.
+    a) There are many `FileNamesToCVS.py` that I think were just copied to where they were needed.
+3) Go into the output .csv and:
+    a) Delete all of the blank lines.
+    b) The last line should be the script name `FileNamesToCVS.py`
+    c) Delete any extra lines after the last line.
+    d) Copy the .csv -- you need one with only the LN2 calibration measurements, and another with the files that you want to calibrate (all of them or less LN2)
+4) Move both .csv to `Reader/CSV batch files`.
+5) Change your cmd directory to `Reader/Calibration` because you need to run the next two scripts from there.
+6) In the script `Reader/Calibration/Cal_Step_1_SND.py`:
+    a) Line 32 - Put the ln2.csv file name without extension
+    b) Also check your generalpaths.py to be sure it's pointing locally.
+    b) After finishing a bunch of folders with results are made in `Reader/Results/L0bdata`
+7) In the script `Reader/Calibration/Cal_Step_2_SND.py`:
+    a) Lines 49, 65, 68 - put in the ln2.csv and keep the extra suffixes in place
+    b) Line 160 - point var `pathfordata`
+    c) I put in a try-except because sometimes and I don't know why exactly (I think I found it once there's a broken column in some .csv) but shit breaks.
+    d) Result is a "Trec" file in the folder made from step 1.
+    e) Copy it to the Calibration folder. Go in and delete the duplicate lines!!!
+8) cd ..
+9) In script `Proccess Measurements L1a.py` (sic):
+    a) Lines 26, 27 - Horn to use ('SND') and Trec file file to refer to.
+    b) Line 29 - How long was the mmt? Jonah says using the longest in all is fine. Probably just messes up the scale on some graphs.
+    c) Line 36 - put test = all.csv
+    d) L1a output goes to `Reader/Results`!
+
+
+Some issues I've had:
+    1) File names are too long when saving figures. 
