@@ -7,7 +7,7 @@ import tables as tb
 
 from Reader.Core.GPSIMUAux import GPSIMU
 from Reader.Core.ThermistorsAux import thermistors
-from Reader.Core.ConfigurationAux import configread
+from Reader.Core.ConfigurationAux import ConfigReader
 from Reader.Core.RadiometerAux import radiometer
 #configfile='..\..\GeneralPaths.py'
 # configfile='..\GeneralPaths.py'
@@ -52,7 +52,7 @@ class dataprocess:
         #     print( "WARNING: The processor cannot find thermistor information on the h5 file")
         ## Reading configuration files    tighten
         # try:            
-        self.Conf=configread(h5file,verbose)
+        self.Conf=ConfigReader(h5file,verbose)
         # except:
         #     print( "WARNING: The processor cannot find a configuration file information on the h5 file")
         # try:

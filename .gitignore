@@ -11,10 +11,7 @@ wheels/
 
 # Places containing data, and any .h5 file
 *.h5
-L0bFiles/Calibration/*
-L0bFiles/Data/*
-Reader/Results/L0bdata/*
-Reader/Results/L1adata/*
+
 
 # CSVs (batch lists, T_rec output)
 *.csv
