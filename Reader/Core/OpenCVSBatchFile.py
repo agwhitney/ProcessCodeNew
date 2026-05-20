@@ -8,7 +8,7 @@ import os
 import sys
 # configfile='./Core/DataProcessorAux.py'
 # sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
-from Reader.Core.DataProcessorAux import dataprocess
+from Reader.Core.DataProcessorAux import DataProcessor
 # configfile='./Core/ThermistorsAux.py'
 # sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
 # configfile='./Core/GeneralPaths.py'

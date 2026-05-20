@@ -19,7 +19,7 @@ import time
 from GeneralPaths import CVS_FILES_DATA_BASE_PATH, L0b_DATA_PROCESSED_PATH, CALVERSION
 from Reader.Core.OpenCVSBatchFile import OpenCVSBatchFile
 from Reader.Core.L1aFileAux import CreateAntennaTempeartureFile
-from Reader.Core.DataProcessorAux import dataprocess
+from Reader.Core.DataProcessorAux import DataProcessor
 
 from pathlib import Path
 
@@ -78,7 +78,7 @@ class P_L1a():
                 
                 ##################################################################### 
                 CalibrationcvsFileName=self.CalibrationFilesNames[ChannelSetToAnalyze]
-                ChSetdpa=dataprocess(Path(filenameroot), ChannelSetToAnalyze)
+                ChSetdpa=DataProcessor(Path(filenameroot), ChannelSetToAnalyze)
                 Tint=ChSetdpa.Conf.RadIntegrationTime[ChannelSetToAnalyze]
                 ChSetdpa.Radiometer.OpenCalCoefsFile(CalibrationcvsFileName) 
                 #LogFilename =os.path.join(ChSetdpa.pathfordata,filenameroot[:-3]+'.log')

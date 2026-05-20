@@ -13,7 +13,7 @@ import numpy as np
 import time, datetime
 configfile='./../Core/DataProcessorAux.py'
 sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
-from DataProcessorAux import dataprocess
+from DataProcessorAux import DataProcess
 configfile='./Core/ThermistorsAux.py'
 sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
 from DataProcessorAux import thermistors

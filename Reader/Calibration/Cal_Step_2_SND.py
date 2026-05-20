@@ -14,7 +14,7 @@ import numpy as np
 import time
 configfile='./../Core/DataProcessorAux.py'
 sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
-from DataProcessorAux import dataprocess
+from DataProcessorAux import DataProcessor
 configfile='./Core/ThermistorsAux.py'
 sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
 from DataProcessorAux import thermistors
@@ -328,3 +328,4 @@ print( ATrec, BTrec, RTrec)
 
 print('FINISHED!')
 print("Exceptions ignored:", exceptionCount)
+

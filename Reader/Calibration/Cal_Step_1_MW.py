@@ -20,7 +20,7 @@ from pathlib import Path
 import time
 
 from GeneralPaths import CVS_FILES_DATA_BASE_PATH, L0b_DATA_PROCESSED_PATH
-from Reader.Core.DataProcessorAux import dataprocess
+from Reader.Core.DataProcessorAux import DataProcessor
 
 
 def calstep1(filepaths: list[Path]):
@@ -151,7 +151,7 @@ def calstep1(filepaths: list[Path]):
         TotalSecondsToAnalyze = TotalSecondsToAnalyzeVector[indexVector]
         filenameroot = filenameroot_vector[indexVector]
         #####################################################################
-        ChSetdpa = dataprocess(filepaths[CalIndex],ChannelSetToAnalyze)
+        ChSetdpa = DataProcessor(filepaths[CalIndex],ChannelSetToAnalyze)
         Tint = ChSetdpa.Conf.RadIntegrationTime[ChannelSetToAnalyze]
         ChannelsToAnalyze = ChSetdpa.ChannelstoBeExplored
         Tint_seconds = Tint/1000
@@ -420,3 +420,4 @@ def calstep1(filepaths: list[Path]):
     time.sleep(3)
     print( open(pathfordata, 'rt').read())
     print('FINISHED CAL STEP 1!')   
+

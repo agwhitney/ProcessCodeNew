@@ -20,7 +20,7 @@ import numpy as np
 import time
 configfile='./../Core/DataProcessorAux.py'
 sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
-from DataProcessorAux import dataprocess
+from DataProcessorAux import DataProcessor
 #configfile='./../Core/ThermistorsAux.py'
 #sys.path.append(os.path.dirname(os.path.expanduser(configfile)))
 configfile='../../GeneralPaths.py'
@@ -107,7 +107,7 @@ for CalIndex in range(0,len(filenamerootVector)-1):
         TotalSecondsToAnalyze=TotalSecondsToAnalyzeVector[indexVector]
         filenameroot=filenameroot_vector[indexVector]
         #####################################################################
-        ChSetdpa=dataprocess(filenameroot,ChannelSetToAnalyze)
+        ChSetdpa=DataProcessor(filenameroot,ChannelSetToAnalyze)
         Tint=ChSetdpa.Conf.RadIntegrationTime[ChannelSetToAnalyze]
         #ChannelsToAnalyze=[0,2]# :
         ChannelsToAnalyze=ChSetdpa.ChannelstoBeExplored
@@ -282,3 +282,4 @@ csvfileOpen.close()
 time.sleep(3)
 print( open(pathfordata, 'rt').read()   )
 print('FINISHED!')
+
