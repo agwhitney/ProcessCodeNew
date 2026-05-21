@@ -243,27 +243,28 @@ class CreateAntennaTempeartureFile():
             NEAT,
             motorInfo,
     ) -> None:
-        ChannelName=eval('self.ChannelsNames' + RadiometricDataType.upper()+'['+str(x)+']')   
-        group = self.h5file.get_node("/RadiometricData/"+RadiometricDataType)
+        ChannelName=eval('self.ChannelsNames' + RadiometricDataType.upper()+'['+str(x)+']')
         try:
-            group = self.h5file.get_node("/RadiometricData/")
-        except:    
-            self.h5file.create_group("/", 'RadiometricData', 'Antenna Temperature and Elevation Angle' )
-        group = self.h5file.create_group("/RadiometricData/", RadiometricDataType, 'Antenna Temperature and Elevation Angle for ' + RadiometricDataType)
-        group = self.h5file.get_node("/RadiometricData/"+RadiometricDataType)
-        print('Creating the h5 node for ', RadiometricDataType)
-        Mposit = self.h5file.create_array(group, "MotorPosition", MotorPosition, title="Motor Position in Counts for the " + ChannelName + " Channel")
-        table = self.h5file.create_table(group, 'TrueCourse', TrueCoursesample, title="Beam Pointing Vector" )
-        sample = table.row
-        TotalNumberofAngles = len(truecourse_x)
-        for i in range(TotalNumberofAngles):
-            sample['x'] = truecourse_x[i]
-            sample['y'] = truecourse_y[i]
-            sample['z'] = truecourse_z[i]
-            sample.append()
-        MotorInformation = self.h5file.create_array(group, "MotorInformation", motorInfo, title="Mean and standard deviation of the raw motor step when spinning")
-
-        table.flush() 
+            group = self.h5file.get_node("/RadiometricData/"+RadiometricDataType)
+        except:
+            try:
+                group = self.h5file.get_node("/RadiometricData/")
+            except:    
+                self.h5file.create_group("/", 'RadiometricData', 'Antenna Temperature and Elevation Angle' )
+            group = self.h5file.create_group("/RadiometricData/", RadiometricDataType, 'Antenna Temperature and Elevation Angle for ' + RadiometricDataType)
+            group = self.h5file.get_node("/RadiometricData/"+RadiometricDataType)
+            print('Creating the h5 node for ', RadiometricDataType)
+            Mposit = self.h5file.create_array(group, "MotorPosition", MotorPosition, title="Motor Position in Counts for the " + ChannelName + " Channel")
+            table = self.h5file.create_table(group, 'TrueCourse', TrueCoursesample, title="Beam Pointing Vector" )
+            sample = table.row
+            TotalNumberofAngles = len(truecourse_x)
+            for i in range(TotalNumberofAngles):
+                sample['x'] = truecourse_x[i]
+                sample['y'] = truecourse_y[i]
+                sample['z'] = truecourse_z[i]
+                sample.append()
+            MotorInformation = self.h5file.create_array(group, "MotorInformation", motorInfo, title="Mean and standard deviation of the raw motor step when spinning")
+            table.flush() 
 
         RadiometricResolutionInformation = self.h5file.create_array(group, 'Ch_'+ChannelName.replace('.','_')+'_NEAT', NEAT, title="Radiometric resolution in Kelvin")   
         
@@ -272,24 +273,22 @@ class CreateAntennaTempeartureFile():
         sample = table.row
         TotalNumberofScans = len(Trec)
         for i in range(TotalNumberofScans):
-        # First, assign the values to the Particle record
-        # print i
-        IntermidiateVariableAntTempAngular = 10*Data[i,:]
-        IntermidiateVariableCalCoef = 10*CalCoef[i]
-        IntermidiateVariableTrec = 10*Trec[i]
-        IntermidiateVariableTref = 10*Tref[i]
-        IntermidiateVariableVref_CalTar = 10000*Vref_CalTar[i] 
-        IntermidiateVariableVref_Sceene = 10000*Vref_Sceene[i] 
+            IntermidiateVariableAntTempAngular = 10*Data[i,:]
+            IntermidiateVariableCalCoef = 10*CalCoef[i]
+            IntermidiateVariableTrec = 10*Trec[i]
+            IntermidiateVariableTref = 10*Tref[i]
+            IntermidiateVariableVref_CalTar = 10000*Vref_CalTar[i] 
+            IntermidiateVariableVref_Sceene = 10000*Vref_Sceene[i] 
 
-        sample['AntTempAngular'] = IntermidiateVariableAntTempAngular.astype(np.uint16)
-        sample['CalCoef'] = IntermidiateVariableCalCoef.astype(np.uint16)
-        sample['Trec'] = IntermidiateVariableTrec.astype(np.uint16)
-        sample['NDDR1'] = NDDR1[i]
-        sample['NDDR2'] = NDDR2[i]
-        sample['Tref'] = IntermidiateVariableTref.astype(np.uint16)
-        sample['Vref_CalTarg'] = IntermidiateVariableVref_CalTar.astype(np.uint16)
-        sample['Vref_Scene'] = IntermidiateVariableVref_Sceene.astype(np.uint16)          
-        sample.append()
+            sample['AntTempAngular'] = IntermidiateVariableAntTempAngular.astype(np.uint16)
+            sample['CalCoef'] = IntermidiateVariableCalCoef.astype(np.uint16)
+            sample['Trec'] = IntermidiateVariableTrec.astype(np.uint16)
+            sample['NDDR1'] = NDDR1[i]
+            sample['NDDR2'] = NDDR2[i]
+            sample['Tref'] = IntermidiateVariableTref.astype(np.uint16)
+            sample['Vref_CalTarg'] = IntermidiateVariableVref_CalTar.astype(np.uint16)
+            sample['Vref_Scene'] = IntermidiateVariableVref_Sceene.astype(np.uint16)          
+            sample.append()
         table.flush() 
 
 

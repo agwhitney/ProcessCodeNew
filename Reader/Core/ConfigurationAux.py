@@ -18,77 +18,71 @@ class ConfigReader:
             print('Instruments found:', numInstruments)
         for Instrument, cfg in self.ConfigInfoContent.items():
             if Verbose:
-                print('\n', Instrument, "is")
-            else:
-                print("inactive")
+                print('\n', Instrument, "active is", cfg['active'])
+            
+            if not cfg['active']:
                 continue
-            if cfg['active']:
-                if Verbose:
-                    print("active")
-                else:
-                    print("inactive")
-
-                ## Radiometer is active, read the configuration values
-                if Instrument == 'radiometer':
-                    self.RadActivated = {}
-                    self.RadIntegrationTime = {}
-                    self.RadSequence = {}
-                    self.Sequence = {}
-                    self.RadSequenceLength = {}
-                    self.StartingPAttern = {}
-                    
-                    for RadiometerSet in range(len(RadId)):
-                        ##
-                        key = RadId[RadiometerSet]
-                        ##
-                        self.StartingPAttern[key] = {}
-                        self.StartingPAttern[key]['ReferenceSequence'] = 0
-                        self.StartingPAttern[key]['NOT_ReferenceSequence'] = 0
-                        ##
-                        self.RadActivated[key] = cfg['characteristics'][key]['active']
-                        self.RadIntegrationTime[key] = cfg['characteristics'][key]['integration_time_ms']
-                        self.RadSequence[key] = cfg['characteristics'][key]['sequence']
-                        self.RadSequenceLength[key] = self.RadSequence[key]['length']
-                        self.Sequence[key] = {}
+            ## Radiometer is active, read the configuration values
+            if Instrument == 'radiometer':
+                self.RadActivated = {}
+                self.RadIntegrationTime = {}
+                self.RadSequence = {}
+                self.Sequence = {}
+                self.RadSequenceLength = {}
+                self.StartingPAttern = {}
+                
+                for RadiometerSet in range(len(RadId)):
+                    ##
+                    key = RadId[RadiometerSet]
+                    ##
+                    self.StartingPAttern[key] = {}
+                    self.StartingPAttern[key]['ReferenceSequence'] = 0
+                    self.StartingPAttern[key]['NOT_ReferenceSequence'] = 0
+                    ##
+                    self.RadActivated[key] = cfg['characteristics'][key]['active']
+                    self.RadIntegrationTime[key] = cfg['characteristics'][key]['integration_time_ms']
+                    self.RadSequence[key] = cfg['characteristics'][key]['sequence']
+                    self.RadSequenceLength[key] = self.RadSequence[key]['length']
+                    self.Sequence[key] = {}
+                    if Verbose:
+                        print(f"\n--->Channel set {key} is {self.RadActivated[key]} Tint: {self.RadIntegrationTime[key]} ms sequence length {self.RadSequenceLength[key]}")
+                    if Verbose:
+                        print("---> sequence:",  self.Sequence[key])
+                    ## reading the radiometer sequence
+                    for x in range(self.RadSequenceLength[key]):
+                        slt = 'slot' + str(x)
+                        self.Sequence[key][slt] = {}
+                        self.Sequence[key][slt]['bitvalues'] = self.RadSequence[key][slt]['value']
+                        self.Sequence[key][slt]['value'] = sum(p*q for p,q in zip(self.RadSequence[key][slt]['value'], [16, 8, 4, 2, 1]))
+                        self.Sequence[key][slt]['length'] = self.RadSequence[key][slt]['length']
+                        self.Sequence[key][slt]['meaning'] = self.RadSequence[key][slt]['meaning']
                         if Verbose:
-                            print(f"\n--->Channel set {key} is {self.RadActivated[key]} Tint: {self.RadIntegrationTime[key]} ms sequence length {self.RadSequenceLength[key]}")
-                        if Verbose:
-                            print("---> sequence:",  self.Sequence[key])
-                        ## reading the radiometer sequence
-                        for x in range(self.RadSequenceLength[key]):
-                            slt = 'slot' + str(x)
-                            self.Sequence[key][slt] = {}
-                            self.Sequence[key][slt]['bitvalues'] = self.RadSequence[key][slt]['value']
-                            self.Sequence[key][slt]['value'] = sum(p*q for p,q in zip(self.RadSequence[key][slt]['value'], [16, 8, 4, 2, 1]))
-                            self.Sequence[key][slt]['length'] = self.RadSequence[key][slt]['length']
-                            self.Sequence[key][slt]['meaning'] = self.RadSequence[key][slt]['meaning']
+                            print(self.Sequence[key][slt]['meaning'],)
+                        ## REFERENCE SEQUENCE, Dicke Load for the ACT channels
+                        if key == 'mmw':
+                            if self.Sequence[key][slt]['value'] == 2 and self.StartingPAttern[key]['ReferenceSequence'] == 0:
+                                self.StartingPAttern[key]['ReferenceSequence'] = self.Sequence[key][slt]['length'] - 2
+                            else:
+                                self.StartingPAttern[key]['NOT_ReferenceSequence'] = self.StartingPAttern[key]['NOT_ReferenceSequence'] + self.Sequence[key][slt]['length']
+                        ## REFERENCE SEQUENCE, Dicke Load for the MW channels
+                        if key == 'mw':
+                            if self.Sequence[key][slt]['value'] == 0 and self.StartingPAttern[key]['ReferenceSequence'] == 0:
+                                self.StartingPAttern[key]['ReferenceSequence'] = self.Sequence[key][slt]['length'] - 2
                             if Verbose:
-                                print(self.Sequence[key][slt]['meaning'],)
-                            ## REFERENCE SEQUENCE, Dicke Load for the ACT channels
-                            if key == 'mmw':
-                                if self.Sequence[key][slt]['value'] == 2 and self.StartingPAttern[key]['ReferenceSequence'] == 0:
-                                    self.StartingPAttern[key]['ReferenceSequence'] = self.Sequence[key][slt]['length'] - 2
-                                else:
-                                    self.StartingPAttern[key]['NOT_ReferenceSequence'] = self.StartingPAttern[key]['NOT_ReferenceSequence'] + self.Sequence[key][slt]['length']
-                            ## REFERENCE SEQUENCE, Dicke Load for the MW channels
-                            if key == 'mw':
-                                if self.Sequence[key][slt]['value'] == 0 and self.StartingPAttern[key]['ReferenceSequence'] == 0:
-                                    self.StartingPAttern[key]['ReferenceSequence'] = self.Sequence[key][slt]['length'] - 2
-                                if Verbose:
-                                    print(self.Sequence[key][slt]['length'] - 2)
-                                else:
-                                    self.StartingPAttern[key]['NOT_ReferenceSequence'] = self.StartingPAttern[key]['NOT_ReferenceSequence'] + self.Sequence[key][slt]['length']
-                                        
-                        self.StartingPAttern[key]['Pattern'] = np.append(np.ones(self.StartingPAttern[key]['ReferenceSequence'], 'int'), int(self.StartingPAttern[key]['NOT_ReferenceSequence']+2)).tolist()
+                                print(self.Sequence[key][slt]['length'] - 2)
+                            else:
+                                self.StartingPAttern[key]['NOT_ReferenceSequence'] = self.StartingPAttern[key]['NOT_ReferenceSequence'] + self.Sequence[key][slt]['length']
+                                    
+                    self.StartingPAttern[key]['Pattern'] = np.append(np.ones(self.StartingPAttern[key]['ReferenceSequence'], 'int'), int(self.StartingPAttern[key]['NOT_ReferenceSequence']+2)).tolist()
 
-                ## Thermistors are active, read the configuration values                                               
-                if Instrument == 'thermistors':
-                    self.TheAddresses = cfg['characteristics']['addresses']
-                    self.TheIntegrationTime = cfg['characteristics']['polling_interval']
+            ## Thermistors are active, read the configuration values                                               
+            if Instrument == 'thermistors':
+                self.TheAddresses = cfg['characteristics']['addresses']
+                self.TheIntegrationTime = cfg['characteristics']['polling_interval']
 
-                ## GPS-IMU are active, read the configuration values   
-                if Instrument == 'gpsimu':
-                    self.GPSAFrequency = cfg['characteristics']['update_frequency']
+            ## GPS-IMU are active, read the configuration values   
+            if Instrument == 'gpsimu':
+                self.GPSAFrequency = cfg['characteristics']['update_frequency']
     
 
 

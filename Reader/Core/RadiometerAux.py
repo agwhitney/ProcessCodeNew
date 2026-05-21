@@ -1,7 +1,6 @@
 import csv
 import math
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 import numpy as np
 import os
 from scipy.optimize import minimize
@@ -9,6 +8,7 @@ import time
 
 from GeneralPaths import CALIBRATION_PATH
 
+from matplotlib.figure import Figure
 type Array = np.ndarray
 
 class radiometer:
@@ -123,7 +123,7 @@ class radiometer:
 
     def UpdateConfigParameters(self) -> None:
         print("Radiometric Type:", self.RadiometricDataType)
-        self.Tint = eval("self.Conf.RadIntegrationTime['"+ self.RadiometricDataType +"']") * 0.001
+        self.Tint = self.Conf.RadIntegrationTime[self.RadiometricDataType] * 0.001
         self.SamplesPerSecond = int(1/self.Tint)
         print('Tint:', self.Tint, ' -- i.e.:',self.SamplesPerSecond ,' samples per second')
         self.CalTargetTemperature, self.CalTargetTemperatureSTD, ArrayMeanTemperature, ArrayStdTemperature, minTemp, maxTemp, diffTemp = self.Thermistors.GetMeanTemperatureChannels(self.CalibratonTargetChannels)
@@ -356,8 +356,7 @@ class radiometer:
         if GeneralValues==True:
             zmin=self.zmin
             zmax=self.zmax
-        #cax = ax.imshow(data[:NScanns,ExtendedSceneIndex].T, cmap=cm.jet, vmin=zmin, vmax=zmax, extent=[0,TotalSecondsToAnalyze,-SwathAngle,SwathAngle])  #130
-        cax = ax.imshow(data[:NScanns,ExtendedSceneIndex].T, cmap=cm.jet, vmin=0, vmax=310, extent=[0,TotalSecondsToAnalyze,-SwathAngle,SwathAngle])  #130
+        cax = ax.imshow(data[:NScanns,ExtendedSceneIndex].T, cmap=plt.colormaps['jet'], vmin=0, vmax=310, extent=[0,TotalSecondsToAnalyze,-SwathAngle,SwathAngle])  #130
 
         fig.colorbar(cax).set_label('Antenna Temperature [K]', fontsize=12) 
         plt.xlabel('Scan Number')

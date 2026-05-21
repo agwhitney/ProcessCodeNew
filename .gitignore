@@ -9,11 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
-# Places containing data, and any .h5 file
+# Data provided and created
 *.h5
-
-
-# CSVs (batch lists, T_rec output)
 *.csv
+*.png
 
 .DS_Store

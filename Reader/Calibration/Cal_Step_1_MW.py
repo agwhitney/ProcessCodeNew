@@ -361,7 +361,7 @@ def calstep1(filepaths: list[Path]):
                                 
                 writer.writerow({
                     'FileName':filenameroot,
-                    'GPSTime':GPSTime[0],
+                    'GPSTime':GPSTime,
                     'Radiometer Set':ChannelSetToAnalyze,
                     'Channel':x,
                     'Cal. Coef.':c[0],

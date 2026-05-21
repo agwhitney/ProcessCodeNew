@@ -42,7 +42,7 @@ def main():
 
     # STEP 3 - Run Cal_Step_1
     # Output goes to Reader/Results/L0bdata in folders for each file and one named 'ln2CVS'.
-    ln2_filepaths = list(ln2_dir.iterdir())
+    ln2_filepaths = list(f for f in ln2_dir.iterdir() if f.suffix == '.h5')
     calstep1(ln2_filepaths)
 
 
@@ -63,5 +63,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-    process(channelset='mw', trec_filename='Reader/Calibration/2026_05_13_0001_20_ln2_test_LN2_Trec_model_mw.csv', seconds_to_analyze=300, batch_filename='all')
+    main()
+    # process(channelset='mw', trec_filename='Reader/Calibration/2026_05_13_0001_20_ln2_test_LN2_Trec_model_mw.csv', seconds_to_analyze=300, batch_filename='all')
