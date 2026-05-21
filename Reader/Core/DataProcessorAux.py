@@ -44,12 +44,12 @@ class DataProcessor:
         frequencies = {
             'mw': [34, 0, 18, 24,34, 0, 18, 24],
             'mmw': [168, 0, 90, 130],
-            'snd': [183-5,183-7, 183-3,183-6,118+0,118+5,118+4,118+0.4,183-2,183-1, 183-8,183-4,118+1,118+3,118+0.225, 118+2],
+            'snd': [183-5, 183-7, 183-3, 183-6, 118+0, 118+5, 118+4, 118+0.4, 183-2, 183-1, 183-8, 183-4, 118+1, 118+3, 118+0.225, 118+2],
         }
         to_explore = {
-            'mw': [0,2,3,4,6,7],
-            'mmw': [0,2,3],
-            'snd': [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],  # June 2014 - Ch4 has been removed, XB
+            'mw': [0, 2, 3, 4, 6, 7],
+            'mmw': [0, 2, 3],
+            'snd': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],  # June 2014 - Ch4 has been removed, XB
         }
         antenna_angular_offset = {
             'mw': -15.75 * np.pi/180, # Calculated using the horn distance from the focal point 8.0 cm and the focal length to the paraboloid 28.575 cm (11.25"), Angle=atan(8/28.575)
